@@ -187,7 +187,7 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
         show_pin_2 = prefs().ACTMAN_show_pin_2
         show_remove = prefs().ACTMAN_show_remove
 
-        gui_param = (0.1 + 0.2*prefs().ACTMAN_layout_name_offset
+        gui_param = (0.1 + 0.2*prefs().ACTMAN_layout_name_offset #split parameter
                      if show_index
                      else 0
                      )
@@ -196,7 +196,12 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
 
         if show_index:
             split.label(text=f'{index + 1}')
-        split.prop(item, "name", text='', emboss=False)
+
+        if item == bpy.context.scene.actman_pin_action_1 or item == bpy.context.scene.actman_pin_action_2:
+            split.alert=True
+            split.prop(item, "name", text='', emboss=True,)
+        else:
+            split.prop(item, "name", text='', emboss=False,)
 
         row = layout.row(align=True)
 
@@ -230,6 +235,7 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
                               emboss=False
                               )
             op.pin_action_1_index = index
+        
 
         if show_pin_2:
             op = row.operator('actman.set_pin_action_2',
