@@ -39,20 +39,15 @@ def get_action_index(action):
     return data.keys().index(action)
 
 
-def get_action_pointer(action):
-    data = bpy.data.actions
-    return data[action]
-
 # set the active action in the action list layout to the active action of
 # the active obj everytime the active action of the active obj change
 
-
 def set_active_in_list():
     scene = bpy.context.scene
-    is_active_sel = scene.actman_action_list_index == get_active_action()[
+    is_active_sel = scene.actman_settings.action_list_index == get_active_action()[
         0]
     if is_active_sel == False:
-        scene.actman_action_list_index = get_active_action()[0]
+        scene.actman_settings.action_list_index = get_active_action()[0]
 
 
 # set the input (index or name) as active action of the active obj
@@ -60,7 +55,7 @@ def set_active_in_list():
 def set_active_action(action_to_set):
     anim_data = bpy.context.view_layer.objects.active.animation_data
     anim_data.action = bpy.data.actions[action_to_set]
-    if prefs().ACTMAN_match_frame:
+    if prefs().match_frame:
         set_frame_range(action_to_set)
     set_active_in_list()
     return anim_data.action.name
@@ -91,7 +86,6 @@ def remove_action(action_to_remove):
 class ACTMAN_OT_set_active_action(bpy.types.Operator):
     bl_idname = "actman.set_active_action"
     bl_label = "Set active action"
-    bl_options = {'REGISTER', 'UNDO'}
     bl_description = 'Set action as active'
 
     action_index: bpy.props.IntProperty(
@@ -100,16 +94,54 @@ class ACTMAN_OT_set_active_action(bpy.types.Operator):
         options={'HIDDEN'}
     )
 
+    options: bpy.props.EnumProperty(
+        name='Options',
+        items=[
+            ('IN LIST', 'In list', 'Set active in list'),
+            ('NEXT', 'Next', 'Set next action as active'),
+            ('PREV', 'Prev', 'Set prev action as active'),
+            ('FIRST', 'First', 'Set first action as active'),
+            ('LAST', 'Last', 'Set last action as active'),
+            ('PIN 1', 'Pin 1', 'Set pin 1 action as active'),
+            ('PIN 2', 'Pin 2', 'Set pin 2 action as active'),
+        ]
+    )
+
     @classmethod
     def poll(cls, context):
-        return True
+
+        return len(bpy.data.actions) > 0
 
     def execute(self, context):
+
         anim_data_create()
-        action_active_name = set_active_action(self.action_index)
+
+        match self.options:
+            case 'IN LIST':
+                index = self.action_index
+            case 'NEXT':
+                index = (bpy.context.scene.actman_action_list_index + 1
+                         if bpy.context.scene.actman_action_list_index < len(bpy.data.actions) - 1
+                         else 0
+                         )
+            case 'PREV':
+                index = bpy.context.scene.actman_action_list_index - 1
+            case 'FIRST':
+                index = 0
+            case 'LAST':
+                index = len(bpy.data.actions) - 1
+            case 'PIN 1':
+                index = bpy.context.scene.actman_settings.pin_action_1.name
+            case 'PIN 2':
+                index = bpy.context.scene.actman_settings.pin_action_2.name
+
+        active_action = set_active_action(index)
+        set_active_in_list()
+
         self.report({'INFO'},
-                    message=f'Active action set to {action_active_name}'
+                    message=f'Active action set to {active_action}'
                     )
+
         return {'FINISHED'}
 
 
@@ -118,7 +150,6 @@ class ACTMAN_OT_set_active_action(bpy.types.Operator):
 class ACTMAN_OT_remove_action(bpy.types.Operator):
     bl_idname = "actman.remove_action"
     bl_label = "Remove action"
-    bl_options = {'REGISTER', 'UNDO'}
 
     action_index: bpy.props.IntProperty(
         name='Action list index',
@@ -126,39 +157,55 @@ class ACTMAN_OT_remove_action(bpy.types.Operator):
     )
 
     def execute(self, context):
+
         action_remove = remove_action(self.action_index)
         self.report({'INFO'},
                     message=f'Removed action {action_remove}'
                     )
+
         return {'FINISHED'}
 
 
-# pin the selected action in the list to pin action 1
+# duplicate selected action
 
-class ACTMAN_OT_set_pin_action_1(bpy.types.Operator):
-    bl_idname = "actman.set_pin_action_1"
-    bl_label = "Set pin action 1"
-    bl_description = 'Set action as pin action 1'
+class ACTMAN_OT_duplicate_action(bpy.types.Operator):
+    bl_idname = "actman.duplicate_action"
+    bl_label = "Duplicate action"
+
+    action_index: bpy.props.IntProperty(
+        name='Action list index',
+        options={'HIDDEN'}
+    )
+
+    def execute(self, context):
+
+        bpy.data.actions[self.action_index].copy()
+
+        return {'FINISHED'}
+
+
+# pin the selected action
+
+class ACTMAN_OT_set_pin_action(bpy.types.Operator):
+    bl_idname = "actman.set_pin_action"
+    bl_label = "Set pin action"
+    bl_description = 'Set action as pin action'
     bl_options = {'REGISTER', 'UNDO'}
+
+    options: bpy.props.EnumProperty(
+        name='Options',
+        items=[
+            ('LIST 1', 'List 1', 'Set action at index in list as pin action 1'),
+            ('LIST 2', 'List 2', 'Set action at index in list as pin action 2'),
+            ('ACTIVE 1', 'Active 1', 'Set active action as pin action 1'),
+            ('ACTIVE 2', 'Active 2', 'Set active action as pin action 1')
+        ]
+    )
 
     pin_action_1_index: bpy.props.IntProperty(
         name='Pin action 1 index',
         options={'HIDDEN'}
     )
-
-    def execute(self, context):
-        scene = bpy.context.scene
-        index = self.pin_action_1_index
-        scene.actman_pin_action_1 = get_action_pointer(index)
-        return {'FINISHED'}
-
-
-# pin the selected action in the list to pin action 2
-
-class ACTMAN_OT_set_pin_action_2(bpy.types.Operator):
-    bl_idname = "actman.set_pin_action_2"
-    bl_label = "Set pin action 2"
-    bl_description = 'Set action as pin action 2'
 
     pin_action_2_index: bpy.props.IntProperty(
         name='Pin action 2 index',
@@ -166,149 +213,17 @@ class ACTMAN_OT_set_pin_action_2(bpy.types.Operator):
     )
 
     def execute(self, context):
+
         scene = bpy.context.scene
-        index = self.pin_action_2_index
-        scene.actman_pin_action_2 = get_action_pointer(index)
-        return {'FINISHED'}
 
+        match self.options:
+            case 'LIST 1':
+                scene.actman_settings.pin_action_1 = bpy.data.actions[self.pin_action_1_index]
+            case 'LIST 2':
+                scene.actman_settings.pin_action_2 = bpy.data.actions[self.pin_action_2_index]
+            case 'ACTIVE 1':
+                scene.actman_settings.pin_action_1 = bpy.context.active_object.animation_data.action
+            case 'ACTIVE 2':
+                scene.actman_settings.pin_action_2 = bpy.context.active_object.animation_data.action
 
-# pin the active action to pin action 1
-
-class ACTMAN_OT_set_active_as_pin_1(bpy.types.Operator):
-    bl_idname = "actman.set_active_as_pin_action_1"
-    bl_label = "Set active as pin action 1"
-    bl_description = 'Set active action as pin action 1'
-
-    @classmethod
-    def poll(cls, context):
-        return is_anim_data_exist()[1]
-
-    def execute(self, context):
-        scene = bpy.context.scene
-        obj = bpy.context.view_layer.objects.active
-        scene.actman_pin_action_1 = obj.animation_data.action
-        return {'FINISHED'}
-
-
-# pin the active action to pin action 1
-
-class ACTMAN_OT_set_active_as_pin_2(bpy.types.Operator):
-    bl_idname = "actman.set_active_as_pin_action_2"
-    bl_label = "Set active as pin action 2"
-    bl_description = 'Set active action as pin action 2'
-
-    @classmethod
-    def poll(cls, context):
-        return is_anim_data_exist()[1]
-
-    def execute(self, context):
-        scene = bpy.context.scene
-        obj = bpy.context.view_layer.objects.active
-        scene.actman_pin_action_2 = obj.animation_data.action
-        return {'FINISHED'}
-
-
-# set pin action 1 as the active action of the active obj
-
-class ACTMAN_OT_to_pin_action_1(bpy.types.Operator):
-    bl_idname = "actman.to_pin_action_1"
-    bl_label = "To pin action 1"
-    bl_description = 'Set pin action 1 as active'
-
-    @classmethod
-    def poll(cls, context):
-        return len(bpy.data.actions) != 0
-
-    def execute(self, context):
-        pin = bpy.context.scene.actman_pin_action_1
-        anim_data_create()
-        set_active_action(pin.name)
-        return {'FINISHED'}
-
-
-# set pin action 2 as the active action of the active obj
-
-class ACTMAN_OT_to_pin_action_2(bpy.types.Operator):
-    bl_idname = "actman.to_pin_action_2"
-    bl_label = "To pin action 2"
-    bl_description = 'Set pin action 2 as active'
-
-    @classmethod
-    def poll(cls, context):
-        return len(bpy.data.actions) != 0
-
-    def execute(self, context):
-        pin = bpy.context.scene.actman_pin_action_2
-        anim_data_create()
-        set_active_action(pin.name)
-        return {'FINISHED'}
-
-
-# set the next action in the action list as the active action of the active obj
-
-class ACTMAN_OT_to_next_action(bpy.types.Operator):
-    bl_idname = "actman.next_action"
-    bl_label = "Next action"
-    bl_description = 'Set next action as active'
-
-    @classmethod
-    def poll(cls, context):
-        return is_anim_data_exist()[1]
-
-    def execute(self, context):
-        next_action = get_active_action()[2]
-        set_active_action(next_action)
-        set_active_in_list()
-        return {'FINISHED'}
-
-
-# set the prev action in the action list as the active action of the active obj
-
-class ACTMAN_OT_to_prev_action(bpy.types.Operator):
-    bl_idname = "actman.prev_action"
-    bl_label = "Prev action"
-    bl_description = 'Set prev action as active'
-
-    @classmethod
-    def poll(cls, context):
-        return is_anim_data_exist()[1]
-
-    def execute(self, context):
-        prev_action = get_active_action()[1]
-        set_active_action(prev_action)
-        return {'FINISHED'}
-
-
-# set the first action in the list as the active action of the active obj
-
-class ACTMAN_OT_to_first_action(bpy.types.Operator):
-    bl_idname = "actman.first_action"
-    bl_label = "First action"
-    bl_description = 'Set first action as active'
-
-    @classmethod
-    def poll(cls, context):
-        return len(bpy.data.actions) != 0
-
-    def execute(self, context):
-        anim_data_create()
-        set_active_action(0)
-        return {'FINISHED'}
-
-
-# set the last action in the list as the active action of the active obj
-
-class ACTMAN_OT_to_last_action(bpy.types.Operator):
-    bl_idname = "actman.last_action"
-    bl_label = "Last action"
-    bl_description = 'Set last action as active'
-
-    @classmethod
-    def poll(cls, context):
-        return len(bpy.data.actions) != 0
-
-    def execute(self, context):
-        last_action = len(bpy.data.actions)-1
-        anim_data_create()
-        set_active_action(last_action)
         return {'FINISHED'}

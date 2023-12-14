@@ -16,18 +16,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import bpy
 
 from .prefs import ACTMAN_prefs
+
 from .operators import (
-    ACTMAN_OT_set_active_action, ACTMAN_OT_remove_action,
-    ACTMAN_OT_set_pin_action_1, ACTMAN_OT_set_pin_action_2,
-    ACTMAN_OT_set_active_as_pin_1, ACTMAN_OT_set_active_as_pin_2,
-    ACTMAN_OT_to_pin_action_1, ACTMAN_OT_to_pin_action_2,
-    ACTMAN_OT_to_next_action, ACTMAN_OT_to_prev_action,
-    ACTMAN_OT_to_first_action, ACTMAN_OT_to_last_action,
+    ACTMAN_OT_set_active_action,
+    ACTMAN_OT_remove_action,
+    ACTMAN_OT_duplicate_action,
+    ACTMAN_OT_set_pin_action,
 )
 from .gui import (
-    ACTMAN_PT_sidebar_panel,
-    ACTMAN_PT_stat,
-    ACTMAN_UL_actions_list
+    ACTMAN_PT_action_manager_panel,
+    ACTMAN_PT_nla_manager_panel,
+    ACTMAN_UL_actions_list,
+    ACTMAN_UL_nla_list
 )
 
 
@@ -42,65 +42,63 @@ bl_info = {
 }
 
 
-classes = (
-    ACTMAN_prefs,
-    ACTMAN_OT_set_active_action,
-    ACTMAN_OT_remove_action,
-    ACTMAN_OT_set_pin_action_1,
-    ACTMAN_OT_set_pin_action_2,
-    ACTMAN_OT_set_active_as_pin_1,
-    ACTMAN_OT_set_active_as_pin_2,
-    ACTMAN_OT_to_pin_action_1,
-    ACTMAN_OT_to_pin_action_2,
-    ACTMAN_OT_to_next_action,
-    ACTMAN_OT_to_prev_action,
-    ACTMAN_OT_to_first_action,
-    ACTMAN_OT_to_last_action,
-    ACTMAN_PT_sidebar_panel,
-    ACTMAN_PT_stat,
-    ACTMAN_UL_actions_list,
-)
+class ACTMAN_PG_action_manager_settings(bpy.types.PropertyGroup):
 
-
-def register():
-
-    bpy.types.Scene.actman_action_list_index = bpy.props.IntProperty(
+    action_list_index: bpy.props.IntProperty(
         name='Action list index',
         description='',
         default=0
     )
 
-    bpy.types.Scene.actman_pin_action_1 = bpy.props.PointerProperty(
+    export_list_index: bpy.props.IntProperty(
+        name='Action list index',
+        description='',
+        default=0
+    )
+
+    pin_action_1: bpy.props.PointerProperty(
         type=bpy.types.Action,
-        name='Pin action 1 name',
+        name='Pin action 1',
         description='',
     )
 
-    bpy.types.Scene.actman_pin_action_2 = bpy.props.PointerProperty(
+    pin_action_2: bpy.props.PointerProperty(
         type=bpy.types.Action,
-        name='Pin action 2 name',
+        name='Pin action 2',
         description='',
     )
 
-    bpy.types.Scene.actman_gui_param_1 = bpy.props.FloatProperty(
-        name='Gui param 1',
-        description='',
-        default=0,
-        min=0
-    )
+
+classes = (
+    ACTMAN_PG_action_manager_settings,
+    ACTMAN_prefs,
+    ACTMAN_OT_set_active_action,
+    ACTMAN_OT_remove_action,
+    ACTMAN_OT_duplicate_action,
+    ACTMAN_OT_set_pin_action,
+    ACTMAN_PT_action_manager_panel,
+    ACTMAN_PT_nla_manager_panel,
+    ACTMAN_UL_actions_list,
+    ACTMAN_UL_nla_list
+)
+
+
+def register():
 
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
 
+    bpy.types.Scene.actman_settings = bpy.props.PointerProperty(
+        type=ACTMAN_PG_action_manager_settings,
+        name='Action Manager settings',
+    )
+
 
 def unregister():
-
-    del bpy.types.Scene.actman_action_list_index
-    del bpy.types.Scene.actman_pin_action_1
-    del bpy.types.Scene.actman_pin_action_2
-    del bpy.types.Scene.actman_gui_param_1
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
+
+    del bpy.types.Scene.actman_settings
