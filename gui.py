@@ -41,7 +41,7 @@ class ACTMAN_PT_nla_manager_panel(bpy.types.Panel):
     bl_order = 2
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
 
         return prefs().use_export
 
@@ -67,6 +67,20 @@ class ACTMAN_PT_nla_manager_panel(bpy.types.Panel):
         else:
             layout.label(text='No animation data')
 
+        row = layout.row(align=True)
+
+        op1 = row.operator('actman.move_strip_in_list',
+                           text='Up',
+                           icon='TRIA_UP'
+                           )
+        op1.options = 'UP'
+
+        op2 = row.operator('actman.move_strip_in_list',
+                           text='Down',
+                           icon='TRIA_DOWN'
+                           )
+        op2.options = 'DOWN'
+
         if bpy.context.active_object is not None and prefs().use_export:
             layout.template_list('ACTMAN_UL_nla_list',
                                  '2',
@@ -84,6 +98,10 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_property, index):
 
+        pin = [bpy.context.scene.actman_settings.pin_action_1,
+               bpy.context.scene.actman_settings.pin_action_2,
+               ]
+
         split_param = (0.1 + 0.2*prefs().layout_name_offset  # split parameter
                        if prefs().show_index
                        else 0
@@ -96,7 +114,7 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
 
         # alert pinned action 1
 
-        if item == bpy.context.scene.actman_settings.pin_action_1 or item == bpy.context.scene.actman_settings.pin_action_2:
+        if item in pin:
             split.alert = True
             split.prop(item, "name", text='', emboss=True,)
         else:
@@ -104,6 +122,8 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
 
         row = layout.row(align=True)
         row.alignment = 'LEFT'
+
+        # show frame range
 
         if prefs().show_frame:
             row.label(text=f'[{int(item.frame_range[0])}-{int(item.frame_range[1])}]')
@@ -161,6 +181,19 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
             op.options = 'LIST 2'
             op.pin_action_2_index = index
 
+        # push down btn
+
+        if prefs().show_push_down:
+            op = row.operator('actman.export_manager_ops',
+                              text='',
+                              icon='NLA_PUSHDOWN',
+                              emboss=False
+                              )
+            op.options = 'PUSH'
+            op.index = index
+
+        # duplicate btn
+
         if prefs().show_duplicate:
             op = row.operator('actman.duplicate_action',
                               text='',
@@ -202,7 +235,6 @@ class ACTMAN_UL_nla_list(bpy.types.UIList):
             split.label(text=f'{index+1}')
 
         row = split.row(align=True)
-        row.alignment = 'LEFT'
 
         if len(item.strips) > 0 and len(item.strips) < 2:
             row.prop(item.strips[0], 'name', text='', emboss=False)
@@ -223,12 +255,23 @@ class ACTMAN_UL_nla_list(bpy.types.UIList):
             row.label(text=f'[{int(item.strips[0].frame_start)}-{int(item.strips[0].frame_end)}]')
 
         elif prefs().show_frame and len(item.strips) == 0:
-            row.label(text=f'[0-0]')
+            row.label(text='[0-0]')
 
         # mute prop
+        if prefs().show_active:
+            row = layout.row(align=True)
+            row.prop(item, 'mute', text='', invert_checkbox=True)
 
-        row = layout.row(align=True)
-        row.prop(item, 'mute', text='', invert_checkbox=True)
+        # delete operator
+
+        if prefs().show_remove:
+            op = row.operator('actman.export_manager_ops',
+                              text='',
+                              icon='TRASH',
+                              emboss=False,
+                              )
+            op.options = 'DEL'
+            op.index = index
 
     def filter_items(self, context, data, property):
 
@@ -236,14 +279,18 @@ class ACTMAN_UL_nla_list(bpy.types.UIList):
 
         item = getattr(data, property)
 
-        filter = []
+        flter = bpy.types.UI_UL_list.filter_items_by_name(self.filter_name,
+                                                          self.bitflag_filter_item,
+                                                          item,
+                                                          "name",
+                                                          reverse=False
+                                                          )
 
         order = [index for index, item in enumerate(item)]
 
-        if prefs().reverse_order:
-            order.reverse()
+        self.use_filter_sort_reverse = bool(prefs().reverse_order)
 
-        return filter, order
+        return flter, order
 
 
 # LAYOUT FUNCTION
@@ -279,12 +326,7 @@ def side_panel_stat(layout):
     col.label(text='FPS:', icon='GP_MULTIFRAME_EDITING')
     col.separator()
 
-    if obj is not None:
-        if is_anim_data_exist()[1]:
-            col.label(text='Active:', icon='RADIOBUT_ON')
-
-    else:
-        col.label(text='Active:', icon='RADIOBUT_OFF')
+    col.label(text='Active:', icon='RADIOBUT_ON')
 
     # right column
 
@@ -294,21 +336,21 @@ def side_panel_stat(layout):
     col.prop(bpy.context.scene.render, 'fps', text='')
     col.separator()
 
-    if obj is not None:
-
-        if is_anim_data_exist()[0]:
-            row = col.row(align=True)
-            row.prop(obj.animation_data, 'action', text='')
-
-            row = row.row()
-            row.enabled = bpy.context.active_object.animation_data.action != None
-            row.operator('actman.duplicate_action',
-                         text='',
-                         icon='DUPLICATE'
-                         )
-
-    else:
+    if obj is None:
         col.label(text='None')
+
+    elif is_anim_data_exist()[0]:
+        row = col.row(align=True)
+        row.prop(obj.animation_data, 'action', text='')
+
+        row = row.row()
+        row.enabled = bpy.context.active_object.animation_data.action != None
+        row.operator('actman.duplicate_action',
+                     text='',
+                     icon='DUPLICATE'
+                     )
+    else:
+        col.label(text='None', icon='ACTION')
 
 
 # buttons layout func
@@ -428,6 +470,9 @@ def action_list_toggle_layout(layout):
              )
     row.prop(prefs(), 'show_pin_2',
              emboss=True, icon='PINNED', icon_only=True
+             )
+    row.prop(prefs(), 'show_push_down',
+             emboss=True, icon='NLA_PUSHDOWN', icon_only=True
              )
     row.prop(prefs(), 'show_duplicate',
              emboss=True, icon='DUPLICATE', icon_only=True

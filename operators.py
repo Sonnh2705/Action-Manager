@@ -1,4 +1,6 @@
+from typing import Set
 import bpy
+from bpy.types import Context
 
 from .prefs import prefs
 
@@ -19,10 +21,7 @@ def set_frame_range(action):
 def is_anim_data_exist():
     obj = bpy.context.view_layer.objects.active
     is_anim_exist = obj.animation_data != None
-    if is_anim_exist:
-        is_action_exist = obj.animation_data.action != None
-    else:
-        is_action_exist = False
+    is_action_exist = obj.animation_data.action != None if is_anim_exist else False
     return is_anim_exist, is_action_exist
 
 
@@ -46,7 +45,7 @@ def set_active_in_list():
     scene = bpy.context.scene
     is_active_sel = scene.actman_settings.action_list_index == get_active_action()[
         0]
-    if is_active_sel == False:
+    if not is_active_sel:
         scene.actman_settings.action_list_index = get_active_action()[0]
 
 
@@ -74,11 +73,33 @@ def get_active_action():
     return index, prev_index, next_index
 
 
+# remove action
+
 def remove_action(action_to_remove):
     action_data = bpy.data.actions
     action_to_remove_name = action_data[action_to_remove].name
     action_data.remove(action_data[action_to_remove])
     return action_to_remove_name
+
+
+# swap strip between 2 nla track
+
+def swap_strip(current_index, target_index):
+
+    nla = bpy.context.active_object.animation_data.nla_tracks
+    current_strip = nla[current_index].strips[0].action
+    target_strip = nla[target_index].strips[0].action
+
+    nla[current_index].strips.remove(nla[current_index].strips[0])
+    nla[target_index].strips.remove(nla[target_index].strips[0])
+
+    nla[target_index].name = current_strip.name
+    strip = nla[target_index].strips.new(current_strip.name, 0, current_strip)
+    strip.select = False
+
+    nla[current_index].name = target_strip.name
+    strip = nla[current_index].strips.new(target_strip.name, 0, target_strip)
+    strip.select = False
 
 
 # set the selected action as the active action of the active obj
@@ -190,7 +211,6 @@ class ACTMAN_OT_set_pin_action(bpy.types.Operator):
     bl_idname = "actman.set_pin_action"
     bl_label = "Set pin action"
     bl_description = 'Set action as pin action'
-    bl_options = {'REGISTER', 'UNDO'}
 
     options: bpy.props.EnumProperty(
         name='Options',
@@ -225,5 +245,72 @@ class ACTMAN_OT_set_pin_action(bpy.types.Operator):
                 scene.actman_settings.pin_action_1 = bpy.context.active_object.animation_data.action
             case 'ACTIVE 2':
                 scene.actman_settings.pin_action_2 = bpy.context.active_object.animation_data.action
+
+        return {'FINISHED'}
+
+
+# operators on for export action
+
+class ACTMAN_OT_export_manager_ops(bpy.types.Operator):
+    bl_idname = "actman.export_manager_ops"
+    bl_label = "Export manager operators"
+    bl_description = 'Operators for export manager'
+    bl_options = {'REGISTER'}
+
+    options: bpy.props.EnumProperty(
+        name='options',
+        items=[
+            ('PUSH', 'Push', 'Push action to export slot'),
+            ('DEL', 'Delete', 'Delete export slot'),
+        ]
+    )
+
+    index: bpy.props.IntProperty(
+        name='Index',
+    )
+
+    def execute(self, context):
+
+        obj = bpy.context.active_object
+        action = bpy.data.actions[self.index]
+
+        match self.options:
+            case 'DEL':
+                obj.animation_data.nla_tracks.remove(obj.animation_data.nla_tracks[self.index])
+            case 'PUSH':
+                track = obj.animation_data.nla_tracks.new()
+                track.name = action.name
+                track.strips.new(action.name, 0, action)
+
+        return {'FINISHED'}
+
+
+class ACTMAN_OT_move_nla_strip_in_list(bpy.types.Operator):
+    bl_idname = 'actman.move_strip_in_list'
+    bl_label = 'Move strip in list'
+    bl_description = 'Move strip in list'
+    bl_options = {'UNDO'}
+
+    options: bpy.props.EnumProperty(
+        name='Options',
+        items=[
+            ('UP', 'Up', 'Move strip up'),
+            ('DOWN', 'Down', 'Move strip down'),
+        ]
+    )
+
+    def execute(self, context):
+
+        index = bpy.context.scene.actman_settings.export_list_index
+
+        match self.options:
+            case 'UP':
+                new_index = index + 1
+            case 'DOWN':
+                new_index = index - 1
+
+        swap_strip(index, new_index)
+
+        bpy.context.scene.actman_settings.export_list_index = new_index
 
         return {'FINISHED'}
