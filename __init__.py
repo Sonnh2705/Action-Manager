@@ -26,6 +26,7 @@ from .operators import (
     ACTMAN_OT_move_nla_strip_in_list,
 )
 from .gui import (
+    ACTMAN_PT_stat_panel,
     ACTMAN_PT_action_manager_panel,
     ACTMAN_PT_nla_manager_panel,
     ACTMAN_UL_actions_list,
@@ -80,6 +81,7 @@ classes = (
     ACTMAN_OT_set_pin_action,
     ACTMAN_OT_export_manager_ops,
     ACTMAN_OT_move_nla_strip_in_list,
+    ACTMAN_PT_stat_panel,
     ACTMAN_PT_action_manager_panel,
     ACTMAN_PT_nla_manager_panel,
     ACTMAN_UL_actions_list,

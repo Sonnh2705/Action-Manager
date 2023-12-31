@@ -299,6 +299,11 @@ class ACTMAN_OT_move_nla_strip_in_list(bpy.types.Operator):
         ]
     )
 
+    @classmethod
+    def poll(cls, context):
+
+        return len(bpy.context.active_object.animation_data.nla_tracks) > 0
+
     def execute(self, context):
 
         index = bpy.context.scene.actman_settings.export_list_index
