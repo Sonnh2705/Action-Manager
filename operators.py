@@ -33,18 +33,12 @@ def anim_data_create():
         obj.animation_data_create()
 
 
-def get_action_index(action):
-    data = bpy.data.actions
-    return data.keys().index(action)
-
-
 # set the active action in the action list layout to the active action of
 # the active obj everytime the active action of the active obj change
 
 def set_active_in_list():
     scene = bpy.context.scene
-    is_active_sel = scene.actman_settings.action_list_index == get_active_action()[
-        0]
+    is_active_sel = scene.actman_settings.action_list_index == get_active_action()[0]
     if not is_active_sel:
         scene.actman_settings.action_list_index = get_active_action()[0]
 
@@ -64,8 +58,8 @@ def set_active_action(action_to_set):
 
 def get_active_action():
     data = bpy.data.actions
-    active_action = bpy.context.view_layer.objects.active.animation_data.action
-    index = get_action_index(active_action.name)
+    active_action = bpy.context.active_object.animation_data.action
+    index = bpy.data.actions.keys().index(active_action.name)
     prev_index = index - 1
     next_index = index + 1
     if next_index == len(data):
@@ -198,9 +192,19 @@ class ACTMAN_OT_duplicate_action(bpy.types.Operator):
         options={'HIDDEN'}
     )
 
+    use_active: bpy.props.BoolProperty(
+        name='Duplicate active action',
+        default=False,
+    )
+
     def execute(self, context):
 
-        bpy.data.actions[self.action_index].copy()
+        if not self.use_active:
+            action = bpy.data.actions[self.action_index]
+        else:
+            action = bpy.data.actions[bpy.context.active_object.animation_data.action]
+
+        action.copy()
 
         return {'FINISHED'}
 

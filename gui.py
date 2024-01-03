@@ -388,10 +388,11 @@ def side_panel_pin_buttons_layout(layout):
 
         dup = active.row()
         dup.enabled = bpy.context.active_object.animation_data.action != None
-        dup.operator('actman.duplicate_action',
-                     text='',
-                     icon='DUPLICATE'
-                     )
+        dup_op = dup.operator('actman.duplicate_action',
+                              text='',
+                              icon='DUPLICATE'
+                              )
+        dup_op.use_active = True
 
     pin1 = right.row(align=True)
     pin1.scale_x = 1.3
