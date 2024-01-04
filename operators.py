@@ -200,11 +200,10 @@ class ACTMAN_OT_duplicate_action(bpy.types.Operator):
     def execute(self, context):
 
         if not self.use_active:
-            action = bpy.data.actions[self.action_index]
+            bpy.data.actions[self.action_index].copy()
         else:
-            action = bpy.data.actions[bpy.context.active_object.animation_data.action]
-
-        action.copy()
+            action = bpy.context.active_object.animation_data.action.copy()
+            bpy.context.active_object.animation_data.action = action
 
         return {'FINISHED'}
 
