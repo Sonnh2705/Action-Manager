@@ -11,7 +11,7 @@ class ACTMAN_prefs(bpy.types.AddonPreferences):
     show_index: bpy.props.BoolProperty(
         name='Show index',
         description="Show action list index",
-        default=True
+        default=False
     )
 
     layout_name_offset: bpy.props.FloatProperty(
@@ -28,6 +28,12 @@ class ACTMAN_prefs(bpy.types.AddonPreferences):
         default=False
     )
 
+    show_fake_user: bpy.props.BoolProperty(
+        name='Show fake user',
+        description="Show fake user",
+        default=False
+    )
+
     show_active: bpy.props.BoolProperty(
         name='Show active',
         description="Show set active action button",
@@ -37,7 +43,7 @@ class ACTMAN_prefs(bpy.types.AddonPreferences):
     show_pin_1: bpy.props.BoolProperty(
         name='Show pin 1',
         description="Show set pin action 1 index",
-        default=True
+        default=False
     )
 
     show_pin_2: bpy.props.BoolProperty(

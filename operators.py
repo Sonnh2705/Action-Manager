@@ -151,7 +151,6 @@ class ACTMAN_OT_set_active_action(bpy.types.Operator):
                 index = bpy.context.scene.actman_settings.pin_action_2.name
 
         active_action = set_active_action(index)
-        set_active_in_list()
 
         self.report({'INFO'},
                     message=f'Active action set to {active_action}'

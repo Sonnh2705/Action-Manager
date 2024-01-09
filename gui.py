@@ -123,6 +123,9 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
         split = layout.split(factor=split_param)
 
         if prefs().show_index:
+
+            if item in pin:
+                split.alert = True
             split.label(text=f'{index + 1}')
 
         # alert pinned action 1
@@ -140,6 +143,13 @@ class ACTMAN_UL_actions_list(bpy.types.UIList):
 
         if prefs().show_frame:
             row.label(text=f'[{int(item.frame_range[0])}-{int(item.frame_range[1])}]')
+
+        if prefs().show_fake_user:
+            row.prop(item,
+                     'use_fake_user',
+                     text='',
+                     emboss=False
+                     )
 
         # set active action btn
 
@@ -374,8 +384,8 @@ def side_panel_pin_buttons_layout(layout):
     right = split.column(align=True)
 
     if (bpy.context.active_object is None
-            or (bpy.context.active_object is not None and not is_anim_data_exist()[0])
-            ):
+        or (bpy.context.active_object is not None and not is_anim_data_exist()[0])
+        ):
         row = right.row(align=True)
         box = row.box()
         box.label(text='None')
@@ -464,12 +474,17 @@ def action_list_toggle_layout(layout):
 
     left = row.column()
     left.alignment = 'LEFT'
-    left.prop(prefs(), 'show_index',
-              emboss=True, icon='LINENUMBERS_ON', icon_only=True
-              )
+
+    l = left.row(align=True)
+    l.prop(prefs(), 'show_index',
+           emboss=True, icon='LINENUMBERS_ON', icon_only=True
+           )
     if prefs().show_index:
-        row.prop(prefs(), 'layout_name_offset',
-                 text='Name offset', emboss=True)
+        l.prop(prefs(), 'layout_name_offset',
+               text='Name offset', emboss=True)
+
+    mid = row.column()
+    mid.alignment = 'CENTER'
 
     right = row.column()
     right.alignment = 'RIGHT'
@@ -478,6 +493,9 @@ def action_list_toggle_layout(layout):
 
     toggle.prop(prefs(), 'show_frame',
                 emboss=True, icon='DRIVER_DISTANCE', icon_only=True
+                )
+    toggle.prop(prefs(), 'show_fake_user',
+                emboss=True, icon='FAKE_USER_ON', icon_only=True
                 )
     toggle.prop(prefs(), 'show_active',
                 emboss=True, icon='RADIOBUT_ON', icon_only=True
