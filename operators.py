@@ -129,26 +129,28 @@ class ACTMAN_OT_set_active_action(bpy.types.Operator):
 
     def execute(self, context):
 
+        attr = bpy.context.scene.actman_settings
+
         anim_data_create()
 
         match self.options:
             case 'IN LIST':
                 index = self.action_index
             case 'NEXT':
-                index = (bpy.context.scene.actman_action_list_index + 1
-                         if bpy.context.scene.actman_action_list_index < len(bpy.data.actions) - 1
+                index = (attr.action_list_index + 1
+                         if attr.action_list_index < len(bpy.data.actions) - 1
                          else 0
                          )
             case 'PREV':
-                index = bpy.context.scene.actman_action_list_index - 1
+                index = attr.action_list_index - 1
             case 'FIRST':
                 index = 0
             case 'LAST':
                 index = len(bpy.data.actions) - 1
             case 'PIN 1':
-                index = bpy.context.scene.actman_settings.pin_action_1.name
+                index = attr.pin_action_1.name
             case 'PIN 2':
-                index = bpy.context.scene.actman_settings.pin_action_2.name
+                index = attr.pin_action_2.name
 
         active_action = set_active_action(index)
 
