@@ -5,8 +5,9 @@ Small add-on for quickly working with action inside blender
 
 **Feature:**
 
-  - Assign action to active object
+  - Quickly assign action to active object
+  - Auto match frame range when assign action
   - Pin action to quickly access
-  - Delete action from blend file
-  - ...Updating
-
+  - Manage actions in blend files (delete, duplicate, set fake user, push to nla)
+  - Export manager for export actions to Unity (no testing currently in other engines)
+... Updating ...
