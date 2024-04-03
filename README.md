@@ -10,4 +10,5 @@ Small add-on for quickly working with action inside blender
   - Pin action to quickly access
   - Manage actions in blend files (delete, duplicate, set fake user, push to nla)
   - Export manager for export actions to Unity (no testing currently in other engines)
+    
 ... Updating ...
