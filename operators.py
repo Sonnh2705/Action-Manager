@@ -1,6 +1,6 @@
 from typing import Set
 import bpy
-from bpy.types import Context
+from bpy.types import Context, OperatorProperties
 
 from .prefs import prefs
 
@@ -101,7 +101,6 @@ def swap_strip(current_index, target_index):
 class ACTMAN_OT_set_active_action(bpy.types.Operator):
     bl_idname = "actman.set_active_action"
     bl_label = "Set active action"
-    bl_description = 'Set action as active'
 
     action_index: bpy.props.IntProperty(
         name='Action list index',
@@ -121,6 +120,13 @@ class ACTMAN_OT_set_active_action(bpy.types.Operator):
             ('PIN 2', 'Pin 2', 'Set pin 2 action as active'),
         ]
     )
+
+    @classmethod
+    def description(cls, context, properties):
+
+        enum = properties.bl_rna.properties['options'].enum_items
+
+        return str(enum[properties.options].description)
 
     @classmethod
     def poll(cls, context):
@@ -214,7 +220,6 @@ class ACTMAN_OT_duplicate_action(bpy.types.Operator):
 class ACTMAN_OT_set_pin_action(bpy.types.Operator):
     bl_idname = "actman.set_pin_action"
     bl_label = "Set pin action"
-    bl_description = 'Set action as pin action'
 
     options: bpy.props.EnumProperty(
         name='Options',
@@ -222,7 +227,7 @@ class ACTMAN_OT_set_pin_action(bpy.types.Operator):
             ('LIST 1', 'List 1', 'Set action at index in list as pin action 1'),
             ('LIST 2', 'List 2', 'Set action at index in list as pin action 2'),
             ('ACTIVE 1', 'Active 1', 'Set active action as pin action 1'),
-            ('ACTIVE 2', 'Active 2', 'Set active action as pin action 1')
+            ('ACTIVE 2', 'Active 2', 'Set active action as pin action 2')
         ]
     )
 
@@ -235,6 +240,13 @@ class ACTMAN_OT_set_pin_action(bpy.types.Operator):
         name='Pin action 2 index',
         options={'HIDDEN'}
     )
+
+    @classmethod
+    def description(cls, context, properties):
+
+        enum = properties.bl_rna.properties['options'].enum_items
+
+        return str(enum[properties.options].description)
 
     def execute(self, context):
 

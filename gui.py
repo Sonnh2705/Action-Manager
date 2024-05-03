@@ -62,7 +62,7 @@ class ACTMAN_PT_nla_manager_panel(bpy.types.Panel):
 
         row1 = layout.row(align=True)
 
-        if bpy.context.active_object is not None and is_anim_data_exist()[0]:
+        if bpy.context.active_object and is_anim_data_exist()[0]:
             row1.prop(bpy.context.active_object.animation_data,
                       'use_nla',
                       text='Use NLA',
